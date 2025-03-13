@@ -1,12 +1,12 @@
-import time
-import tqdm
+import time # Typically used for performance measurement, though not used explicitly in this part of the code.
+import tqdm # Used for creating a progress bar for loops.
 
 import os
 os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'   # see issue #152
 os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
 import numpy as np
-import pandas as pd
+import pandas as pd # Used for handling structured data (CSV files in this case).
 import tensorflow as tf
 
 
