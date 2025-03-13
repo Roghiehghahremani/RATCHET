@@ -3,15 +3,16 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import json
-import os
-import tqdm
+import json # Used to handle JSON data (in this case, to read COCO annotations).
+import os # Provides functions to interact with the operating system, such as handling file paths.
+import tqdm # A library used for creating progress bars in Python loops.
 
-import tensorflow as tf
+import tensorflow as tf 
+#A tokenizer from the tokenizers library that performs Byte-Pair Encoding (BPE), 
+# which is commonly used in NLP tasks to handle vocabulary and tokenization efficiently.
+from tokenizers import ByteLevelBPETokenizer 
 
-from tokenizers import ByteLevelBPETokenizer
-
-
+# A tokenizer from the tokenizers library that performs Byte-Pair Encoding (BPE), which is commonly used in NLP tasks to handle vocabulary and tokenization efficiently.
 def parse_function(filename, texts_inputs, texts_labels):
     # Read entire contents of image
     image_string = tf.io.read_file(filename)
@@ -44,6 +45,8 @@ def augmentation_fn(inputs, texts_labels):
 
     return (image, texts_inputs), texts_labels
 
+# Purpose: This function generates a Gaussian kernel (a filter used in convolution operations) 
+# based on a given kernel size and sigma value. It's used for blurring an image.
 
 def _gaussian_kernel(kernel_size, sigma, n_channels, dtype):
     x = tf.range(-kernel_size // 2 + 1, kernel_size // 2 + 1, dtype=dtype)
@@ -59,7 +62,11 @@ def apply_blur(img):
     img = tf.nn.depthwise_conv2d(img[None], blur, [1, 1, 1, 1], 'SAME')
     return img[0]
 
-
+""" This function loads the MS COCO dataset for training or validation:
+It reads captions from the COCO annotations JSON file.
+It tokenizes the captions using the Byte-Level BPE Tokenizer.
+It creates a TensorFlow dataset with images and tokenized text.
+It applies the parse_function (for image processing) and augmentation_fn (for data augmentation) to the dataset."""
 def get_mscoco_dataset(coco_root,
                        vocab_root,
                        max_length=64,
