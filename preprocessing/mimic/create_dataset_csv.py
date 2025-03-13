@@ -1,3 +1,9 @@
+"""Summary
+Reads MIMIC-CXR metadata and split information.
+Merges them into a single dataset.
+Filters for PA/AP view X-rays.
+Handles missing reports (though further processing may be needed).
+This script is likely used for preparing the dataset before model training or evaluation in a radiology AI project. """
 import os
 import tqdm
 
