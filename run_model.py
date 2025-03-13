@@ -1,22 +1,26 @@
-import argparse
-import imageio
-import glob
+import argparse # Handles command-line arguments.
+import imageio # Reads image files.
+import glob # Helps find images in a directory.
 import os
-import datetime
+import datetime # Not used in the script (potential leftover).
 
 import numpy as np
-import tensorflow as tf
+import tensorflow as tf # Loads models, processes images, and performs inference.
 
-from model.transformer import Transformer, default_hparams
-from tokenizers import ByteLevelBPETokenizer
+from model.transformer import Transformer, default_hparams # Loads a Transformer model for text generation.
 
+from tokenizers import ByteLevelBPETokenizer # Loads a pre-trained tokenizer.
 
+"""Loads a binary classifier (cxr_validator_model) that predicts whether an image is a chest X-ray (CXR).
+Purpose: Ensures only CXR images are processed."""
 def load_validator():
     validator_model = tf.keras.models.load_model('checkpoints/cxr_validator_model.tf')
     print('Validator Model Loaded!')
     return validator_model
 
-
+"""oads the Byte-Pair Encoding (BPE) tokenizer for processing text.
+Defines a Transformer model using hyperparameters (default_hparams).
+Loads pre-trained weights from checkpoints/RATCHET2.tf."""
 def load_model():
 
     # Load Tokenizer
@@ -39,7 +43,9 @@ def load_model():
 
     return transformer, tokenizer
 
-
+"""Filters logits so only the top-k highest probabilities remain.
+Low-probability words are replaced with -1e10 (effectively ignored).
+Helps prevent the model from picking low-confidence words."""
 def top_k_logits(logits, k):
     if k == 0:
         # no truncation
@@ -60,7 +66,9 @@ def top_k_logits(logits, k):
     )
 
 
-
+"""Selects words whose cumulative probability is ≤ p.
+Adaptive: Can include more words when the probability distribution is flat.
+Ensures high-probability words are prioritized while allowing diversity."""
 def top_p_logits(logits, p):
     """Nucleus sampling"""
     batch, _ = logits.shape.as_list()
@@ -78,7 +86,13 @@ def top_p_logits(logits, p):
         logits,
     )
 
-
+"""Starts with a <s> (start token).
+Feeds input image and previous tokens to the Transformer to generate text word by word.
+Applies top-k / top-p sampling and temperature scaling to adjust randomness.
+Stops when the end token (2) is predicted.
+Returns:
+The decoded sentence (report).
+The attention weights from the Transformer."""
 def evaluate(inp_img, tokenizer, transformer, temperature, top_k, top_p, options, seed, MAX_LENGTH=128):
 
     # The first token to the transformer should be the start token
@@ -113,7 +127,14 @@ def evaluate(inp_img, tokenizer, transformer, temperature, top_k, top_p, options
     return tf.squeeze(output, axis=0)[1:], transformer.decoder.last_attn_scores
 
 
-
+"""Parses CLI arguments (temperature, top-k, top-p, etc.).
+Loads the Transformer model & Validator.
+Iterates through images in the input folder:
+Skips non-image files.
+Resizes & normalizes the image.
+Validates whether it's a CXR (cxr_validator_model).
+Generates a report using the Transformer.
+Saves the report as a text file."""
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
