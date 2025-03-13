@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 import os
 
 import numpy as np
-import pandas as pd
+import pandas as pd # Read CSV Files
 import tensorflow as tf
 
 from tokenizers import ByteLevelBPETokenizer
