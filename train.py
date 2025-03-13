@@ -1,3 +1,10 @@
+"""
+Summary
+This script trains a Transformer model on the MIMIC-CXR dataset to generate medical reports.
+Supports multi-GPU training.
+Uses masked loss & accuracy to handle padding.
+Implements a custom learning rate scheduler.
+Saves the best model checkpoint."""
 import os
 
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
