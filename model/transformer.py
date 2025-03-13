@@ -3,12 +3,19 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import datetime
+import datetime # Used to handle date and time operations (e.g., logging).
 
 import numpy as np
 import tensorflow as tf
 
-
+"""This function defines the default hyperparameters for the transformer model. The keys indicate image dimensions, model parameters, and architecture details:
+img_x, img_y: Image dimensions (224x224).
+img_ch: Number of image channels (1, for grayscale).
+d_model: Dimensionality of the model (embedding size).
+dff: Dimensionality of the feed-forward layer.
+num_heads: Number of attention heads in multi-head attention.
+num_layers: Number of layers in the decoder.
+dropout_rate: Dropout rate used to prevent overfitting."""
 def default_hparams():
     return {
         'img_x': 224,
@@ -21,7 +28,9 @@ def default_hparams():
         'dropout_rate': 0.1
     }
 
-
+"""Positional encoding adds information about the relative position of tokens (e.g., in text or spatial locations for images) to the input embeddings. This is essential for transformers since they don't inherently have any notion of the position of tokens. The function:
+Generates sine and cosine functions at different frequencies to represent positional encodings.
+Concatenates sine and cosine encodings and returns the result."""
 def positional_encoding(length, depth):
     depth = depth / 2
 
@@ -37,7 +46,10 @@ def positional_encoding(length, depth):
 
     return tf.cast(pos_encoding, dtype=tf.float32)
 
-
+"""This custom Keras layer adds positional encodings to token embeddings. It:
+Initializes a word embedding layer and adds positional encoding.
+Scales the embedding values by the square root of the embedding dimension to control the scale of the input to the network.
+Adds positional encoding to the embeddings to represent the order of the tokens."""
 class PositionalEmbedding(tf.keras.layers.Layer):
     def __init__(self, vocab_size, d_model):
         super().__init__()
@@ -56,7 +68,10 @@ class PositionalEmbedding(tf.keras.layers.Layer):
         x = x + self.pos_encoding[tf.newaxis, :length, :]
         return x
 
-
+"""This class serves as the base for both types of attention layers. It initializes:
+MultiHeadAttention: Implements the multi-head attention mechanism.
+LayerNormalization: Normalizes the output of the attention mechanism.
+Add: Adds the input x to the output of the attention mechanism (residual connection)."""
 class BaseAttention(tf.keras.layers.Layer):
     def __init__(self, **kwargs):
         super().__init__()
@@ -64,7 +79,10 @@ class BaseAttention(tf.keras.layers.Layer):
         self.layernorm = tf.keras.layers.LayerNormalization()
         self.add = tf.keras.layers.Add()
 
-
+"""This performs "cross-attention," where:
+x is the query, which is updated using context (keys and values).
+The attention scores are cached for later visualization or analysis.
+The residual connection and layer normalization are applied."""
 class CrossAttention(BaseAttention):
     def call(self, x, context):
         attn_output, attn_scores = self.mha(
@@ -81,7 +99,8 @@ class CrossAttention(BaseAttention):
 
         return x
 
-
+"""Causal self-attention is used to ensure that the model only attends to previous tokens in the sequence 
+(i.e., it does not look ahead), which is critical for tasks like language modeling."""
 class CausalSelfAttention(BaseAttention):
     def call(self, x):
         attn_output = self.mha(
@@ -93,7 +112,10 @@ class CausalSelfAttention(BaseAttention):
         x = self.layernorm(x)
         return x
 
-
+"""This class implements the feed-forward layers that are used after attention layers. It consists of:
+A fully connected layer with ReLU activation.
+A second fully connected layer that reduces the dimensionality back to d_model.
+Dropout and layer normalization are applied to prevent overfitting and stabilize training."""
 class FeedForward(tf.keras.layers.Layer):
     def __init__(self, d_model, dff, dropout_rate=0.1):
         super().__init__()
@@ -110,7 +132,11 @@ class FeedForward(tf.keras.layers.Layer):
         x = self.layer_norm(x)
         return x
 
-
+"""This class represents a single layer of the decoder, containing:
+Causal self-attention.
+Cross-attention.
+Feed-forward network.
+The call method performs these operations sequentially and applies residual connections and layer normalization."""
 class DecoderLayer(tf.keras.layers.Layer):
     def __init__(self,
                  *,
@@ -142,7 +168,8 @@ class DecoderLayer(tf.keras.layers.Layer):
         x = self.ffn(x)  # Shape `(batch_size, seq_len, d_model)`.
         return x
 
-
+"""The encoder takes an image as input, uses a DenseNet-121 model for feature extraction, and applies a fully connected layer 
+to the extracted features. If pre-trained weights are provided, they are loaded into the DenseNet-121 model."""
 class Encoder(tf.keras.layers.Layer):
     def __init__(self, embedding_dim, input_shape, pretrain_weights=None):
         super(Encoder, self).__init__()
@@ -169,7 +196,8 @@ class Encoder(tf.keras.layers.Layer):
         x = self.fc(x)
         return x
 
-
+"""The decoder generates a sequence output based on the context from the encoder. It uses positional embeddings and 
+applies multiple layers of attention and feed-forward networks."""
 class Decoder(tf.keras.layers.Layer):
     def __init__(self, *, num_layers, d_model, num_heads, dff, vocab_size,
                  dropout_rate=0.1):
@@ -202,7 +230,11 @@ class Decoder(tf.keras.layers.Layer):
         # The shape of x is (batch_size, target_seq_len, d_model).
         return x
 
+"""This is the main transformer model. It:
 
+Uses the Encoder to process the input image (or context).
+Uses the Decoder to generate the output sequence (possibly text or other representations).
+The final output is processed through a fully connected layer to get logits (predictions)."""
 class Transformer(tf.keras.Model):
     def __init__(self, num_layers, d_model, num_heads, dff,
                  target_vocab_size, dropout_rate=0.1, input_shape=(224, 224, 1),
@@ -241,7 +273,11 @@ class Transformer(tf.keras.Model):
         # Return the final output and the attention weights.
         return logits
 
+"""This is the main transformer model. It:
 
+Uses the Encoder to process the input image (or context).
+Uses the Decoder to generate the output sequence (possibly text or other representations).
+The final output is processed through a fully connected layer to get logits (predictions)."""
 if __name__ == "__main__":
 
     hparams = default_hparams()
