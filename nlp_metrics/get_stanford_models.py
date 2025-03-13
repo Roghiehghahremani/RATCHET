@@ -1,16 +1,28 @@
 #!/usr/bin/env python
 from __future__ import print_function
-
+"""Imports: The necessary Python modules are imported:
+os: Provides functions to interact with the operating system, such as file and directory manipulation.
+shutil: Offers high-level file operations, including moving and removing files.
+zipfile: A module to work with .zip archive files, enabling extraction of the Stanford CoreNLP package."""
 import os
 import shutil
 import zipfile
-
+"""his block ensures compatibility with both Python 2.x and Python 3.x:
+In Python 3.x, urlretrieve is imported from urllib.request.
+In Python 2.x, it is imported from urllib.
+This enables the script to run on both Python versions, handling the file download in a platform-agnostic way.
+"""
 try:
     from urllib.request import urlretrieve
 except ImportError:
     from urllib import urlretrieve
 
-
+"""Variables:
+core_nlp: This is the name of the Stanford CoreNLP zip archive that will be downloaded. It 
+corresponds to the full package of CoreNLP models and tools.
+spice_lib: The directory where the Stanford CoreNLP files and models will be placed.
+jar: This pattern string defines the name of the jar file(s) (with and without the -models suffix) that 
+are expected in the downloaded archive."""
 def main():
     core_nlp = "stanford-corenlp-full-2015-12-09"
     spice_lib = "spice/lib"
