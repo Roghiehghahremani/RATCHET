@@ -64,7 +64,11 @@ def make_grayscale_fn(image, text):
     image = tf.image.rgb_to_grayscale(image)
 
     return image, text
-
+"""Purpose:
+The train_dataset and valid_dataset are created by mapping image paths and labels into TensorFlow dataset objects.
+The datasets are shuffled, augmented, and processed through the parse_function, augmentation_fn, and make_grayscale_fn.
+The batch() function groups the data into batches for training.
+prefetch() is used to improve the performance by overlapping the preprocessing and training steps."""
 train_dataset = tf.data.Dataset.from_tensor_slices((train_image_paths, train_labels))
 train_dataset = train_dataset.shuffle(len(train_dataset))
 train_dataset = train_dataset.map(parse_function, num_parallel_calls=tf.data.experimental.AUTOTUNE)
@@ -82,10 +86,17 @@ valid_dataset = valid_dataset.prefetch(tf.data.experimental.AUTOTUNE)
 
 ##### Setup DenseNet-121 Network and Training ##########################################################################
 
+"""Purpose:
+Sets up a distributed training strategy that allows for parallel training across multiple GPUs.
+MirroredStrategy allows the training of the model on multiple devices (GPUs), improving speed and performance."""
 # Create a MirroredStrategy.
 strategy = tf.distribute.MirroredStrategy()
 print('Number of devices: {}'.format(strategy.num_replicas_in_sync))
 
+"""Purpose:
+Defines a DenseNet121 model without the top layer (i.e., include_top=False).
+Adds a GlobalAveragePooling2D layer, a dense layer with 1024 neurons (with ReLU activation), and an output layer with 14 units (since the labels likely correspond to 14 classes, using sigmoid for multi-label classification).
+Compiles the model using the Adam optimizer, binary cross-entropy loss, and accuracy as the evaluation metric."""
 with strategy.scope():
     model = tf.keras.Sequential([
         tf.keras.applications.DenseNet121(include_top=False, weights=None, input_shape=(224, 224, 1)),
@@ -99,7 +110,8 @@ with strategy.scope():
         loss='binary_crossentropy',
         metrics=['accuracy']
     )
-
+"""ModelCheckpoint is used to save the model weights at the end of each epoch if the validation loss improves.
+CkptDenseNet is a custom callback that prints information about the epoch and saves the model weights at the end of each epoch."""
 checkpoint = tf.keras.callbacks.ModelCheckpoint(
     filepath='checkpoint/weights-improvement-{epoch:02d}-{val_accuracy:.2f}.hdf5',
     monitor='val_loss', verbose=1)
