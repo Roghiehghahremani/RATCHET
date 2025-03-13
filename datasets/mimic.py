@@ -7,11 +7,14 @@ import os
 
 import numpy as np
 import pandas as pd # Read CSV Files
-import tensorflow as tf
+import tensorflow as tf # Builds and processes datasets
 
-from tokenizers import ByteLevelBPETokenizer
+from tokenizers import ByteLevelBPETokenizer # Tokenizes text using Byte Pair Encoding (BPE)
 
-
+""" Purpose:
+Reads an image file.
+Converts it into a normalized float tensor ([0,1] range).
+Resizes it with padding to 224x224 pixels."""
 def parse_function(filename, texts_inputs, texts_labels):
     # Read entire contents of image
     image_string = tf.io.read_file(filename)
@@ -26,7 +29,11 @@ def parse_function(filename, texts_inputs, texts_labels):
     image = tf.image.resize_with_pad(image, 224, 224, method=tf.image.ResizeMethod.BILINEAR)
 
     return (image, texts_inputs), texts_labels
-
+""" urpose:
+Applies Data Augmentation:
+Randomly flips images horizontally.
+Adjusts brightness, saturation, and contrast.
+Clips pixel values to keep them within [0,1]."""
 
 def augmentation_fn(inputs, texts_labels):
     # Random left-right flip the image
@@ -42,8 +49,8 @@ def augmentation_fn(inputs, texts_labels):
     image = tf.clip_by_value(image, 0.0, 1.0)
 
     return (image, texts_inputs), texts_labels
-
-
+    
+# Converts images from RGB (3-channel) to grayscale (1-channel).
 def make_grayscale_fn(inputs, texts_labels):
     # Convert image to grayscale
     image, texts_inputs = inputs
@@ -51,7 +58,9 @@ def make_grayscale_fn(inputs, texts_labels):
 
     return (image, texts_inputs), texts_labels
 
-
+""" Loads and processes the MIMIC-CXR dataset.
+Applies tokenization to medical reports.
+Constructs a TensorFlow dataset."""
 def get_mimic_dataset(csv_root,
                       vocab_root,
                       mimic_root,
@@ -61,8 +70,9 @@ def get_mimic_dataset(csv_root,
                       buffer_size=10000,
                       mode='train',
                       unsure=1):
-
+    # Ensures mode is either 'train', 'validate', or 'test'.
     assert mode in ['train', 'validate', 'test']
+    # Ensures unsure flag is either 0 or 1.                      
     assert unsure in [0, 1]
 
     # Load Byte-Level BPE Tokenizer with mimic vocabulary
